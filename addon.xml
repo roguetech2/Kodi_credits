@@ -1,1 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="script.xbmc.skipcredits" name="Skip Credits" version="1.0.0" provider-name="roguetech">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0"/>
+  </requires>
+  <extension point="xbmc.service" library="default.py"></extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">Auto-skips based on time stamps saved in skip.txt file(s)</summary>
+    <description lang="en">
+        Reads times from skip.txt, saved in the same folder as the video(s). Start and stop times can be added to skip.txt.
+	Times can be set for specific episodes. See example_skip.txt for more details.
+    </description>
+    <platform>all</platform>
+    <license>GPL-3.0-only</license>
+    <news>v1.0.0
+      - Released
+    </news>
+    <assets>
+      <icon>icon.png</icon>
+    </assets>
+  </extension>
+</addon>
+
 
