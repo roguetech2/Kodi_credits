@@ -12,13 +12,19 @@
 # Need file services to read time stamp files
 import xbmcvfs
 import xbmc
-#import xbmcaddon
+import xbmcaddon
 # Need os services to manipulate the file folder names
 import os
 #import xbmcgui
 # Obviously need time services
 import time
-#import re
+# Need regular expression
+import re
+
+logging = xbmcaddon.Addon().getSetting('logging')
+static_name = xbmcaddon.Addon().getSetting('static_name')
+match_videoname = xbmcaddon.Addon().getSetting('match_videoname')
+poll_time = float(0.3)
 
 def run():
     global player
@@ -34,17 +40,46 @@ def run():
             # Abort was requested while waiting. We should exit
             break
 
-def setDebug():
-    return True
+def load_settings():
+    global logging
+    global static_name
+    global match_videoname
+
+    old_logging = logging
+    old_static_name = static_name
+    old_match_videoname = match_videoname
+
+    logging = xbmcaddon.Addon().getSetting('logging')
+    if old_logging != logging: log('Set logging to ' + str(logging) + ' from ' + str(old_logging))
+    static_name = xbmcaddon.Addon().getSetting('static_name')
+    if old_static_name != static_name: log('Set logging to ' + str(static_name) + ' from ' + str(old_static_name))
+    match_videoname = xbmcaddon.Addon().getSetting('match_videoname')
+    if old_match_videoname != match_videoname: log('Set logging to ' + str(match_videoname) + ' from ' + str(old_match_videoname))
 
 def log(msg):
-    if setDebug:
+    #if logging == True:
         xbmc.log(u'{0}: {1}'.format('scripts.skipcredits', msg), level=xbmc.LOGFATAL)
 
 class MyPlayer(xbmc.Player):
     def __init__(self, *args, **kwargs):
         xbmc.Player.__init__(self)
         addonName = 'Skip Credits'
+
+    def get_poll_time(self):
+        global poll_time
+        old_poll_time = poll_time
+        poll_time = int(xbmcaddon.Addon().getSetting('poll_time'))
+        if poll_time == 0: return_value = float(0.05)
+        if poll_time == 1: return_value = float(0.1)
+        if poll_time == 2: return_value = float(0.2)
+        if poll_time == 3: return_value = float(0.3)
+        if poll_time == 4: return_value = float(0.5)
+        if poll_time == 5: return_value = float(0.75)
+        if poll_time == 6: return_value = float(1)
+        if poll_time == 7: return_value = float(2)
+        if poll_time == 8: return_value = float(5)
+        if old_poll_time != poll_time: log('Changed polling rate to ' + str(return_value) + ' seconds from ' + str(old_poll_time) + ' seconds')
+        return return_value
 
     def extract_season(self,text):
         text = text.lower()
@@ -102,13 +137,14 @@ class MyPlayer(xbmc.Player):
     # Returns null if video not playing
     def getVideoFolder(self):
         from contextlib import closing
-        folderName = None
+        foldername = None
         try:
-            folderName = xbmc.getInfoLabel('Player.FilenameAndPath')
-            log(folderName)
+            foldername = xbmc.getInfoLabel('Player.FilenameAndPath')
+            foldername = os.path.dirname(foldername)
+            log(foldername)
         except RuntimeError:
             pass
-        return folderName
+        return foldername
     
     
     # Performs xbmc.getPlayingFile()
@@ -167,7 +203,6 @@ class MyPlayer(xbmc.Player):
                 return True
         except RuntimeError:
             pass
-
         
     def play_next(self):
         from contextlib import closing
@@ -183,24 +218,55 @@ class MyPlayer(xbmc.Player):
         except RuntimeError:
             pass
 
-
     # Return true if file name matches `skip.txt`, or contains video name while ending in `skip.txt`, as case-insensative
-    def check_file_match(self, filename, videoname):
+    def check_filename_match(self, playing_file_name, time_file_name):
         # Either can be one file with each season/episode enumerated,
         # or separate files named by season and episode
-        if not filename.lower().endswith('skip.txt'):  return
-        
-        if filename.lower() == 'skip.txt': return True
-        if videoname.lower() in filename: return True
+        match = False
+        if static_name:
+            if time_file_name.lower().endswith('skip.txt'):  match = True
+            if time_file_name.lower() == 'skip.txt':  match = True
+        if not static_name:
+            if time_file_name.endswith('skip.txt'):  match = True
+            if time_file_name == 'skip.txt':  match = True
+        if match_videoname:
+            if static_name:
+                if playing_file_name.lower() in time_file_name: match = True
+            if not static_name:
+                if not playing_file_name in time_file_name: match = True
+        return match
 
-    def read_file(self, foldername, filename):
+    def read_file(self, foldername, playing_file_name, time_file_name,timestamps):
         from contextlib import closing
         try:
-            file_path = os.path.join(foldername, filename)
+            file_path = os.path.join(foldername, time_file_name)
             with xbmcvfs.File(file_path,'r') as f:
-                return f.read()
+                text= f.read()
+                if not text:
+                    log('File is blank.')
+                    return
+                lines = text.split('\n')
+                for line in lines:
+                    line = line.strip()
+
+                    # skip lines that start with '#' or are empty
+                    # would prefer allowing inline comments too
+                    if not line or line.startswith('#'): continue
+
+                    #season/episode
+                    if re.search(r'^s\d{2}', line):
+                        isMatch = False
+                        if self.check_season_episode_match(playing_file_name, line):
+                            isMatch = True
+                        continue
+
+                    # Timestamps
+                    if not isMatch: continue
+                    if self.read_time_line(line):
+                        timestamps.append(self.read_time_line(line))
+            return timestamps
         except IOError:
-            log('Unable to open file:' + foldername + '\\' + filename)
+            log('Unable to open file:' + foldername + '\\' + time_file_name)
             pass
 
     def read_time_line(self,line):
@@ -226,58 +292,31 @@ class MyPlayer(xbmc.Player):
         # (enough for 11 days)
         return str(start).rjust(10, '0') + '-' + str(stop).rjust(10, '0').strip()
     
-    def get_timestamps(self):
-        foldername = self.getVideoFolder()
-        if not foldername: return
-        foldername = os.path.dirname(foldername)
-        # Need video name for season/episode match in timestamp file
-        videoname  = self.getVideoName()
-        if not videoname: return
-        videoname = os.path.basename(videoname).rsplit(".", 1)[0]
-
-        if "." in videoname:
-            videoname = videoname.rsplit(".", 1)[0]
-        log('Playing ' + videoname)
-
-        # Get season number and episode numbers for playing file
-        video_season = self.extract_season(videoname)
-        video_episode = self.extract_episode(videoname)
-
-        if not foldername or not videoname: return
-
+    def get_timestamps(self, playing_file_name):
         timestamps = []
-        files = os.listdir(foldername)
+        foldername = self.getVideoFolder()
+        playing_file_name = os.path.basename(playing_file_name).rsplit(".", 1)[0]
+        # No need to loop at all
+        if not static_name and not match_videoname:
+            time_file_name = 'skip.txt'
+            timestamps = self.read_file(foldername,'skip.txt',time_file_name,timestamps)
+        
+        if static_name or match_videoname:
+            files = os.listdir(foldername)
+            isMatch = True
+            for time_file_name in files:
+                isMatch = self.check_filename_match(playing_file_name, time_file_name)
 
-        isMatch = True
-        for filename in files:
-            if not self.check_file_match(filename,videoname):
-                continue
-            log('Using timestamps in ' + filename + '.')
+                if static_name:
+                    if time_file_name.lower() != 'skip.txt':
+                        isMatch = False
+                    log(time_file_name + ' match is ' + str(isMatch))
 
-            text = self.read_file(foldername,filename)
-            if not text:
-                log('File is blank.')
-                continue
-            lines = text.split('\n')
-            for line in lines:
-                line = line.strip()
-
-                # skip lines that start with '#' or are empty
-                # would prefer allowing inline comments too
-                if not line or line.startswith('#'): continue
-
-                #season/episode
-                if re.search(r'^s\d{2}', line):
-                    isMatch = False
-                    if self.check_season_episode_match(videoname, line):
-                        isMatch = True
+                if not isMatch:
                     continue
-
-                # Timestamps
-                if not isMatch: continue
-                if self.read_time_line(line):
-                    timestamps.append(self.read_time_line(line))
-        timestamps.sort()
+                timestamps = self.read_file(foldername,playing_file_name,time_file_name,timestamps)
+        if timestamps:
+            timestamps.sort()
         return timestamps
 
     def convertTimeToSeconds(self, strTime):
@@ -305,18 +344,24 @@ class MyPlayer(xbmc.Player):
         # Wait a bit for video to load
         #if KODIMONITOR.waitForAbort(0.4):
         #    return
-        filename = self.getVideoName()
-        self.timestamps = []
-        timestamps = self.get_timestamps()
+        poll_time = self.get_poll_time()
+        load_settings()
 
-        if not filename: return
+        playing_file_name = self.getVideoName()
+        log('Playing file: ' + playing_file_name)
+        self.timestamps = []
+        timestamps = self.get_timestamps(playing_file_name)
+        if not playing_file_name:
+            log('No playing file')
+            return
         if not timestamps:
-            self.waitVideoEnd(filename)
+            log('No timestammpes')
+            self.waitVideoEnd(playing_file_name)
             return
 
         # Log all the matching timestamps
-        if setDebug():
-            log('Got timestamps:')  
+        log('Got timestamps:')
+        if logging:
             for i in range(0, len(timestamps), 1):
                 log(str(i) + ': ' + str(timestamps[i]))
 
@@ -348,11 +393,11 @@ class MyPlayer(xbmc.Player):
             if not self.getVideoName: return
             # Wait for skip time to arrive (or video stops)
             while (self.getRuntime() < start_time):
-                if kodi_monitor.waitForAbort(0.2):
+                if kodi_monitor.waitForAbort(poll_time):
                     # Abort was requested while waiting. We should exit
                     return
                 # Check if still playing the same video
-                if self.getVideoName() != filename: return
+                if self.getVideoName() != playing_file_name: return
 
             # If already past destination point, skip to the next timestamp
             if (self.getRuntime() and stop_time < self.getRuntime()):
@@ -365,7 +410,7 @@ class MyPlayer(xbmc.Player):
             if stop_time == 999999:
                 if int(start_time) == 0:
                     log('Trying to skip the entire video with start ' + str(start_time) + ' end ' + str(stop_time))
-                    self.waitVideoEnd(filename)
+                    self.waitVideoEnd(playing_file_name)
                 # Set seek to near end, to set video play as completed (no resume position)
                 self.setSeek(self.getVideoLength() - 10)
                 # If there is a playlist (and not at the end of it), play next
@@ -377,18 +422,18 @@ class MyPlayer(xbmc.Player):
                     log('Stopping playback.')
                     self.stop_play()
                 # Wait for video end (so not to get stuck in a loop, if Kodi doesn't skip/end fast enough)
-                self.waitVideoEnd(filename)
+                self.waitVideoEnd(playing_file_name)
                 return
 
             if not self.setSeek(stop_time):
                 return
         # After all timestamps, send it to waitVideoEnd
-        self.waitVideoEnd(filename)
+        self.waitVideoEnd(playing_file_name)
 
-    def waitVideoEnd(self, filename):
+    def waitVideoEnd(self, playing_file_name):
         # If after last time stamp, monitor for abort or new video
         log('Waiting for video to end.')
-        while self.getVideoName() == filename:
+        while self.getVideoName() == playing_file_name:
             if kodi_monitor.waitForAbort(1):
                 break
 
@@ -396,3 +441,6 @@ class MyMonitor(xbmc.Monitor):
     def __init__(self, *args, **kwargs):
         xbmc.Monitor.__init__(self)
         log('MyMonitor - init')
+
+    def onSettingsChanged(self):
+        load_settings()
