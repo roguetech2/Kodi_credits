@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
-	<category label="GENERALS">
-		<setting id="default.skip" type="slider" label="Default Skip for New Shows" default="45" range="10,120" option="int" />
+	<category label="General">
+<setting id="poll_time" label="Polling frequency for if playback time reached skip position" type="enum" default="2" values="50 milliseconds | 100 milliseconds | 200 milliseconds  | 300 milliseconds  | 500 milliseconds  | 750 milliseconds  | 1 second | 2 seconds | 5 seconds"/>
+		<setting id="static_name" type="bool" label="Allow 'skip.txt' to be case-insensative (results in reading directory contents for each play)." default=True />
+		<setting id="match_videoname" type="bool" label="Find files with videoname (eg '[videoname*]skip.txt')." default=True />
+		<setting id="debugging" type="bool" label="Enable logging" default=False />
 	</category>
 
 
