@@ -18,11 +18,6 @@ import os                        # Used to manipulate the file folder names
 import re                        # Used to match season and episode, and validate time stamp entries
 import time                      # Used for button timer
 
-#import time                     # Obviously need time services
-
-
-#_addon_info = xbmcaddon.Addon().getAddonInfo
-#_addon_path = xbmc.translatePath(_addon_info('path'))
 _polling_rate = float(0.3)
 
 def run():
@@ -38,7 +33,6 @@ def run():
         if kodi_monitor.waitForAbort(1):
             # Abort was requested while waiting. We should exit
             break
-
 
 def load_settings():
     global _logging
