@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
 	<category label="General">
-<setting id="poll_time" label="Polling frequency for if playback time reached skip position" type="enum" default="2" values="50 milliseconds | 100 milliseconds | 200 milliseconds  | 300 milliseconds  | 500 milliseconds  | 750 milliseconds  | 1 second | 2 seconds | 5 seconds"/>
-		<setting id="static_name" type="bool" label="Allow 'skip.txt' to be case-insensative (results in reading directory contents for each play)." default=True />
-		<setting id="match_videoname" type="bool" label="Find files with videoname (eg '[videoname*]skip.txt')." default=True />
-		<setting id="debugging" type="bool" label="Enable logging" default=False />
+<setting id="polling_rate" label="Polling time to match playback time to skip position:" type="enum" default="2" values="50 milliseconds | 100 milliseconds | 200 milliseconds  | 300 milliseconds  | 500 milliseconds  | 750 milliseconds  | 1 second | 2 seconds | 5 seconds"/>
+		<setting id="dynamic_name" type="bool" label="Loops through files in directory for case-insensative file matching?" default=True />
+		<setting id="logging" type="bool" label="Enable logging?" default=False />
 	</category>
-
-
 </settings>
