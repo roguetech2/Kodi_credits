@@ -12,9 +12,9 @@
 # Need file services to read time stamp files
 import xbmcvfs
 import xbmc
-import xbmcaddon                 # used for settings and "Disable" button
+#import xbmcaddon
 import os                        # Used to manipulate the file folder names
-import xbmcgui                   # Used to display "Disable" button
+#import xbmcgui
 import re                        # Used to match season and episode, and validate time stamp entries
 import time                      # Used for button timer
 
@@ -435,29 +435,3 @@ class MyMonitor(xbmc.Monitor):
 
     def onSettingsChanged(self):
         load_settings()
-
-#class CustomDialog(xbmcgui.WindowXMLDialog):
-#    def __init__(self, xmlFile, resourcePath):
-#        pass#
-
-#    def onInit(self):
-#        global _disabled
-#        global _dialog_open
-#        _disabled = False
-#        _dialog_open = True
-#        log('Init dialog')
-#        exit
-
-    #def onControl(self, control):
-    #    pass
-
-    #def onFocus(self, control):
-    #    pass
-
-#    def onClick(self, control):
-#        global _disabled
-#        log('Here ' + str(control))
-#        if control == 201:
-#            log('Disabling')
-#            _disabled = True
-#            self.close()
