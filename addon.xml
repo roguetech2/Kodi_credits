@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.xbmc.skipcredits" name="Skip Credits" version="1.0.0" provider-name="roguetech">
+<addon id="script.skipcredits" name="Skip Credits" version="0.9.0" provider-name="roguetech">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
   </requires>
@@ -12,13 +12,13 @@
     </description>
     <platform>all</platform>
     <license>GPL-3.0-only</license>
-    <news>v1.0.0
-      - Released
+    <website>https://github.com/roguetech2/Kodi_credits/</website>
+    <source>https://github.com/roguetech2/Kodi_credits/</source>
+    <news>v0.9.0
+      - Beta release
     </news>
     <assets>
       <icon>icon.png</icon>
     </assets>
   </extension>
 </addon>
-
-
