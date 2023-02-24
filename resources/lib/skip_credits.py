@@ -12,7 +12,7 @@
 # Need file services to read time stamp files
 import xbmcvfs
 import xbmc
-#import xbmcaddon
+import xbmcaddon                 # Used for settings
 import os                        # Used to manipulate the file folder names
 #import xbmcgui
 import re                        # Used to match season and episode, and validate time stamp entries
@@ -30,24 +30,21 @@ def run():
 
     # Run until abort requested
     while not kodi_monitor.abortRequested():
-        if kodi_monitor.waitForAbort(1):
+        if kodi_monitor.waitForAbort(10):
             # Abort was requested while waiting. We should exit
             break
 
 def load_settings():
     global _logging
     global _dynamic_name
+    global _folder_match
+    global _reverse_match
 
     _logging = xbmcaddon.Addon().getSetting('logging')
     _dynamic_name = xbmcaddon.Addon().getSetting('dynamic_name')
+    _folder_match = xbmcaddon.Addon().getSetting('folder_match')
+    _reverse_match = xbmcaddon.Addon().getSetting('reverse_match')
     
-    _old_logging = _logging
-    _old_dynamic_name = _dynamic_name
-
-    _logging = xbmcaddon.Addon().getSetting('logging')
-    if _old_logging != _logging: log('Set logging to ' + str(_logging) + ' from ' + str(_old_logging))
-    _dynamic_name = xbmcaddon.Addon().getSetting('dynamic_name')
-    if _old_dynamic_name != _dynamic_name: log('Set statis name to ' + str(_dynamic_name) + ' from ' + str(_old_dynamic_name))
 
 def log(_msg):
     #if logging == True:
@@ -59,8 +56,11 @@ class MyPlayer(xbmc.Player):
         _addonName = 'Skip Credits'
 
     def set_init_vars(self):
+        global _polling_rate
+        global _pad_start
         load_settings()
         self.set_polling_rate()
+        self.set_pad_start()
         self.set_playing_video_name()
         self.set_video_folder_name()
         self.set_video_length()
@@ -102,19 +102,28 @@ class MyPlayer(xbmc.Player):
 
     def set_polling_rate(self):
         global _polling_rate
-        _old_polling_rate = _polling_rate
         _polling_rate = int(xbmcaddon.Addon().getSetting('polling_rate'))
-        if _polling_rate == 0: _return_value = float(0.05)
-        if _polling_rate == 1: _return_value = float(0.1)
-        if _polling_rate == 2: _return_value = float(0.2)
-        if _polling_rate == 3: _return_value = float(0.3)
-        if _polling_rate == 4: _return_value = float(0.5)
-        if _polling_rate == 5: _return_value = float(0.75)
-        if _polling_rate == 6: _return_value = float(1)
-        if _polling_rate == 7: _return_value = float(2)
-        if _polling_rate == 8: _return_value = float(5)
-        if _old_polling_rate != _polling_rate: log('Changed polling rate to ' + str(_return_value) + ' seconds from ' + str(_old_polling_rate) + ' seconds')
-        return _return_value
+        if _polling_rate == 0: _return = float(0.05)
+        if _polling_rate == 1: _return = float(0.1)
+        if _polling_rate == 2: _return = float(0.2)
+        if _polling_rate == 3: _return = float(0.3)
+        if _polling_rate == 4: _return = float(0.5)
+        if _polling_rate == 5: _return = float(0.75)
+        if _polling_rate == 6: _return = float(1)
+        if _polling_rate == 7: _return = float(2)
+        if _polling_rate == 8: _return = float(5)
+        _polling_rate = _return
+    
+    def set_pad_start(self):
+        global _pad_start
+        _pad_start = int(xbmcaddon.Addon().getSetting('pad_start'))
+        if _pad_start == 0: _return = float(0)
+        if _pad_start == 1: _return = float(0.5)
+        if _pad_start == 2: _return = float(1)
+        if _pad_start == 3: _return = float(1.5)
+        if _pad_start == 4: _return = float(2)
+        if _pad_start == 5: _return = float(3)
+        _pad_start = _return
 
     def extract_season(self, _text):
         _text = _text.lower()
@@ -177,6 +186,7 @@ class MyPlayer(xbmc.Player):
             _run_time = float(xbmc.Player().getTime())
         except RuntimeError:
             pass
+        if _run_time < 0: _run_time = float(int(_run_time))
         return _run_time
     
     # Performs xbmc.getTime()
@@ -189,7 +199,6 @@ class MyPlayer(xbmc.Player):
             _video_length = float(xbmc.Player().getTotalTime())
         except RuntimeError:
             pass
-
 
     # Performs xbmc.seekTime()
     # Returns null if video not playing
@@ -239,6 +248,18 @@ class MyPlayer(xbmc.Player):
         if _time_file_name == 'skip.txt': return True
         if not _time_file_name.endswith('skip,txt'): return
         if _playing_video_name.lower() in _time_file_name: return True
+        if _folder_match == 'true':
+            if _video_folder_name.lower() in _time_file_name: return True
+        
+        if _reverse_match == 'true':
+            _index = _time_file_name.find('skip.txt')
+            if _index == -1: return False
+            _match_name = _time_file_name[:_index]
+            if _match_name and not _match_name[-1].isalnum():
+                _match_name = _match_name[:-1]
+            if _match_name in _playing_video_name.lower(): return True
+            if _match_name in _video_folder_name.lower(): return True
+            
 
     def read_file(self, _time_file_name):
         global _timestamps
@@ -336,9 +357,15 @@ class MyPlayer(xbmc.Player):
         return _days * 86400 + int(_hours) * 3600 + int(_minutes) * 60 + float(_seconds)
 
     def get_start_time(self, _time_string):
+
         if '-' in _time_string:
-             return float(_time_string.rsplit("-", 1)[0])
-        return float(_time_string)
+            _float_time = float(_time_string.rsplit("-", 1)[0])
+        else:
+            _float_time = float(_time_string)
+        if _pad_start > 0:
+            if _float_time > 0: _float_time = _float_time + _pad_start
+        log('starts time ' + str(_float_time))
+        return _float_time
 
     def get_stop_time(self, _time_string):
         if "-" in _time_string:
@@ -381,9 +408,7 @@ class MyPlayer(xbmc.Player):
 
     def onAVStarted(self):
         self.set_init_vars()
-        log('Done setting vars.')
         if not _playing_video_name:
-            log('not video playing')
             return
          
         #loop through each timestamp entry (extracted for this one video)
@@ -398,12 +423,21 @@ class MyPlayer(xbmc.Player):
                 continue
 
             log('Using start time: ' + str(_start_time) + '; end time: ' + str(_stop_time))
+
+            if _start_time > _video_length:
+                log('Start time (' + str(_start_time) + ') is after the end of the video (' + str(_video_length) + ').')
+                self.wait_video_end()
+                return
+
             log('Waiting for start time: ' + str(_start_time))
 
             # Wait for skip time to arrive (or video stops)
             while (self.get_run_time() < _start_time):
                 # Check if still playing the same video
                 if self.get_playing_video_name() != _playing_video_name: return
+                if kodi_monitor.waitForAbort(_polling_rate):
+                    break
+
 
             # If already past destination point, skip to the next timestamp
             if (_stop_time < self.get_run_time()):
@@ -419,7 +453,7 @@ class MyPlayer(xbmc.Player):
         # If after last time stamp, monitor for abort or new video
         log('Waiting for video to end.')
         while self.get_playing_video_name() == _playing_video_name:
-            if kodi_monitor.waitForAbort(1):
+            if kodi_monitor.waitForAbort(100):
                 break
 
 class MyMonitor(xbmc.Monitor):
