@@ -1,0 +1,51 @@
+#The White Queen
+
+s01e01
+#intro credits
+#0-31
+57:41
+s01e02
+  #previously seen
+  0-52
+    52-31
+    57:20
+s01e03
+  #previously seen
+  0-1:05
+    1:05-31
+    58:24
+s01e04
+  #previously seen
+  0-1:08
+    1:08-31
+    57:23
+s01e05
+  #previously seen
+  0-1:02
+    1:02-31
+    #56:45
+s01e06
+  #previously seen
+  0-1:05
+    1:05-31
+    57:28
+s01e07
+  #previously seen
+  0-59
+    59-31
+    57:50
+s01e08
+  #previously seen
+  0-1:01
+    1:01-31
+    58:20
+s01e09
+  #previously seen
+  0-46
+    46-31
+    56:23
+s01e10
+  #previously seen
+  0-1:12
+    1:12-31
+    1:02:29
