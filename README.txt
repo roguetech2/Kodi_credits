@@ -1,3 +1,5 @@
+Not tested for version 20!
+
 This addon skips video playback based on timestamps entered in a text file. After installing, preferences can be set un Services -> Skip Credits - > Configure.
 
 The first setting is for polling rate, which determines how precise it will be in skipping.The only thing performed within this loop is checking the video playback position and check if the filename has changed. A decent computer should be able to do this at the minimum setting, but there isn't much point for anything less than 300 milliseconds.
