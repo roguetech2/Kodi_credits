@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<addon id="repository.roguetech" name="Roguetech Skip Credits" version="1.0.0.0" provider-name="Roguetech">
+    <requires>
+        <import addon="xbmc.addon" version="1.0.0"/>
+    </requires>
+    <extension point="xbmc.addon.repository" name="Roguetech Skip Credits">
+        <dir>
+            <info compressed="true">https://john-emily.love/addons.xml</info>
+            <checksum>https://john-emily.love/addons/addons.xml.md5</checksum>
+            <datadir zip="true">https://john-emily.love/addons</datadir>
+            <hashes>false</hashes>
+        </dir>
+        <dir minversion="0.9.1">
+            <info compressed="true">https://github.com/roguetech2/Kodi_credits/repository/addons.xml</info>
+            <checksum>https://github.com/roguetech2/Kodi_credits/repository/addons.xml.md5</checksum>
+            <datadir zip="false">https://github.com/roguetech2/Kodi_credits/Skip Credits</datadir>
+            <hashes>false</hashes>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Addon repository of Roguetech</summary>
+        <description lang="en">Roguetech's Skip Credits addon repository</description>
+        <disclaimer/>
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>
