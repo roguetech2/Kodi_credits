@@ -244,7 +244,6 @@ class MyPlayer(xbmc.Player):
     def check_filename_match(self, _time_file_name):
         if not _dynamic_name == 'true': return
         _time_file_name = _time_file_name.lower()
-
         if _time_file_name == 'skip.txt': return True
         if not _time_file_name.endswith('skip,txt'): return
         if _playing_video_name.lower() in _time_file_name: return True
@@ -266,12 +265,14 @@ class MyPlayer(xbmc.Player):
         from contextlib import closing
         try:
             _file_path = os.path.join(_video_folder_name, _time_file_name)
+            _is_match = False
             with xbmcvfs.File(_file_path,'r') as f:
                 _text = f.read()
                 if not _text:
                     log('File is blank.')
                     return
                 _lines = _text.split('\n')
+                _is_match = True
                 for _line in _lines:
                     _line = _line.strip()
 
